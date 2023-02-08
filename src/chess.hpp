@@ -23,14 +23,7 @@ namespace chess
     }
 
     struct piece;
-
-    inline std::vector<std::shared_ptr<piece>> all_pieces;
-    inline std::vector<piece*> pieces[2];
-
-    inline std::vector<std::pair<int8_t, int8_t>> checks[2];
     inline piece *board[8][8];
-    inline piece *kings[2];
-
     inline int8_t scores[2];
 
     inline constexpr auto chars = frozen::make_map<std::tuple<colours, uint8_t>, const char *>({
@@ -83,7 +76,6 @@ namespace chess
 
     struct queen : piece
     {
-        bool internal_move(int8_t to_x, int8_t to_y);
         std::vector<std::pair<int8_t, int8_t>> possible_moves();
 
         queen(colours colour, int8_t x = 3, bool reverse = false) : piece(9, chars.at({ colour, 1 }), colour, x, get_y(colour, reverse ? 7 : 0)) { }

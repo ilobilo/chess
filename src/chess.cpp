@@ -12,6 +12,19 @@ namespace chess
     static colours next = colours::black;
     static bool generating = false;
 
+    static std::vector<std::shared_ptr<piece>> all_pieces;
+    static std::vector<piece*> pieces[2];
+
+    static std::vector<std::pair<int8_t, int8_t>> checks[2];
+    static piece *kings[2];
+
+    // To avoid leaks
+    template<typename Type, typename ...Args>
+    auto allocate(Args &&...args)
+    {
+        return all_pieces.emplace_back(new Type(args...)).get();
+    }
+
     constexpr inline bool in_range(int8_t x, int8_t y)
     {
         return x >= 0 && y >= 0 && x < 8 && y < 8;
@@ -171,10 +184,10 @@ namespace chess
         [](int8_t x, int8_t y) -> std::pair<int8_t, int8_t> { return { x + 1, y - 2 }; },
         [](int8_t x, int8_t y) -> std::pair<int8_t, int8_t> { return { x - 1, y + 2 }; },
         [](int8_t x, int8_t y) -> std::pair<int8_t, int8_t> { return { x - 1, y - 2 }; },
-        [](int8_t x, int8_t y) -> std::pair<int8_t, int8_t> { return { y + 1, x + 2 }; },
-        [](int8_t x, int8_t y) -> std::pair<int8_t, int8_t> { return { y + 1, x - 2 }; },
-        [](int8_t x, int8_t y) -> std::pair<int8_t, int8_t> { return { y - 1, x + 2 }; },
-        [](int8_t x, int8_t y) -> std::pair<int8_t, int8_t> { return { y - 1, x - 2 }; }
+        [](int8_t x, int8_t y) -> std::pair<int8_t, int8_t> { return { x + 2, y + 1 }; },
+        [](int8_t x, int8_t y) -> std::pair<int8_t, int8_t> { return { x - 2, y + 1 }; },
+        [](int8_t x, int8_t y) -> std::pair<int8_t, int8_t> { return { x + 2, y - 1 }; },
+        [](int8_t x, int8_t y) -> std::pair<int8_t, int8_t> { return { x - 2, y - 1 }; }
     };
 
     bool piece::move(int8_t to_x, int8_t to_y)
@@ -213,7 +226,6 @@ namespace chess
         return moves;
     }
 
-    bool queen::internal_move(int8_t to_x, int8_t to_y) { return true; };
     std::vector<std::pair<int8_t, int8_t>> queen::possible_moves()
     {
         std::vector<std::pair<int8_t, int8_t>> moves;
@@ -257,7 +269,7 @@ namespace chess
         {
             auto index = colour2index(this->colour);
             remove_from(pieces[index], [&](auto sptr) { return sptr == this; });
-            pieces[index].emplace_back(new queen(this->colour, to_x, true));
+            pieces[index].push_back(allocate<queen>(this->colour, to_x, true));
         }
 
         return true;
@@ -270,10 +282,13 @@ namespace chess
         auto add = [&](int8_t pos, int8_t val) { return this->colour == colours::black ? pos - val : pos + val; };
         auto sub = [&](int8_t pos, int8_t val) { return this->colour == colours::black ? pos + val : pos - val; };
 
-        can_go(moves, this->colour, this->x, add(this->y, 1), shouldn_kill);
+        if (generating == false)
+        {
+            can_go(moves, this->colour, this->x, add(this->y, 1), shouldn_kill);
 
-        if (this->has_moved == false)
-            can_go(moves, this->colour, this->x, add(this->y, 2), shouldn_kill);
+            if (this->has_moved == false)
+                can_go(moves, this->colour, this->x, add(this->y, 2), shouldn_kill);
+        }
 
         can_go(moves, this->colour, add(this->x, 1), add(this->y, 1), should_kill);
         can_go(moves, this->colour, sub(this->x, 1), add(this->y, 1), should_kill);
@@ -286,20 +301,20 @@ namespace chess
         auto index = colour2index(colour);
 
         for (size_t i = 0; i < 8; i++)
-            pieces[index].push_back(new pawn(colour, i));
+            pieces[index].push_back(allocate<pawn>(colour, i));
 
-        pieces[index].push_back(new rook(colour, 0));
-        pieces[index].push_back(new rook(colour, 7));
+        pieces[index].push_back(allocate<rook>(colour, 0));
+        pieces[index].push_back(allocate<rook>(colour, 7));
 
-        pieces[index].push_back(new knight(colour, 1));
-        pieces[index].push_back(new knight(colour, 6));
+        pieces[index].push_back(allocate<knight>(colour, 1));
+        pieces[index].push_back(allocate<knight>(colour, 6));
 
-        pieces[index].push_back(new bishop(colour, 2));
-        pieces[index].push_back(new bishop(colour, 5));
+        pieces[index].push_back(allocate<bishop>(colour, 2));
+        pieces[index].push_back(allocate<bishop>(colour, 5));
 
-        pieces[index].push_back(new queen(colour));
+        pieces[index].push_back(allocate<queen>(colour));
 
-        pieces[index].push_back(kings[index] = new king(colour));
+        pieces[index].push_back(kings[index] = allocate<king>(colour));
     }
 
     void clear()
@@ -312,19 +327,25 @@ namespace chess
         auto currbg = fmt::color::white;
         auto nextbg = fmt::color::gray;
 
-        auto colour = [&]
-        {
-            auto old = currbg;
-            std::swap(currbg, nextbg);
-            return old;
-        };
-
         for (int8_t y = 7; y >= 0; y--)
         {
             fmt::print("{} ", y + 1);
             for (int8_t x = 0; x < 8; x++)
             {
                 auto piece = board[x][y];
+
+                auto colour = [&]
+                {
+                    auto old = currbg;
+                    std::swap(currbg, nextbg);
+
+#if 0
+                    if (is_in(checks[colour2index(curr)], std::pair(x, y)))
+                        return fmt::color::red;
+#endif
+
+                    return old;
+                };
 
                 if (piece != nullptr)
                     fmt::print(fmt::bg(colour()) | fmt::fg(fmt::color::black), "{} ", piece->character);
@@ -379,10 +400,18 @@ namespace chess
         }
     }
 
+    constexpr inline bool in_range_of(auto val, auto from, auto to)
+    {
+        return val >= from && val <= to;
+    }
+
     bool move(std::string_view val)
     {
-        if (val.length() != 4 || !std::isalpha(val[0]) || !std::isdigit(val[1]) || !std::isalpha(val[2]) || !std::isdigit(val[3]))
-            return false;
+        if (val.length() != 4 ||
+            (!in_range_of(val[0], 'a', 'h') && !in_range_of(val[0], 'A', 'H')) ||
+            (!in_range_of(val[2], 'a', 'h') && !in_range_of(val[2], 'A', 'H')) ||
+            !std::isdigit(val[1]) || !std::isdigit(val[3]))
+                return false;
 
         auto [from_x, from_y] = name2pos(val.substr(0, 2));
         auto [to_x, to_y] = name2pos(val.substr(2, 4));
