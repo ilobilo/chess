@@ -1,4 +1,4 @@
-# Bf2os
+# Chess
 **VERY** badly coded cli chess
 
 ## Building and Running
