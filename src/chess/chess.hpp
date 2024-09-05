@@ -36,6 +36,12 @@ namespace chess
         cen::file font_file;
         cen::file knook_file;
 
+        cen::file move_file;
+        cen::file capture_file;
+
+        cen::music move_audio;
+        cen::music capture_audio;
+
         cen::font font;
 
         cen::texture knook_texture;
@@ -47,6 +53,7 @@ namespace chess
 
         bool is_running;
         bool game_over;
+        bool next_game_over;
 
         inline auto &get_piece_texture(piece::colour c, piece::type p)
         {
@@ -75,4 +82,6 @@ namespace chess
 
     std::pair<const void *, std::size_t> get_knook_data();
     std::pair<const void *, std::size_t> get_font_data();
+    std::pair<const void *, std::size_t> get_move_data();
+    std::pair<const void *, std::size_t> get_capture_data();
 } // namespace chess

@@ -34,11 +34,14 @@ namespace chess
         font_file { std::apply(SDL_RWFromConstMem, chess::get_font_data()) },
         knook_file { std::apply(SDL_RWFromConstMem, chess::get_knook_data()) },
 
+        move_file { std::apply(SDL_RWFromConstMem, chess::get_move_data()) },
+        capture_file { std::apply(SDL_RWFromConstMem, chess::get_capture_data()) },
+
+        move_audio { move_file }, capture_audio { capture_file },
+
         font { font_file, 16 },
 
-        //! there's a typo in renderer.hpp:185 IMG_LoadTexture_RW -> IMG_LoadTextureRW
-        //! so we use cen::surface with make_texture calls
-        knook_texture { renderer.make_texture(cen::surface { knook_file }) },
+        knook_texture { renderer.make_texture(knook_file) },
 
         piece_files {
             [&]<std::size_t... I>(std::index_sequence<I...>) -> std::array<cen::file, 12> {
@@ -48,10 +51,10 @@ namespace chess
 
         piece_textures {
             [&]<std::size_t... I>(std::index_sequence<I...>) -> std::array<cen::texture, 12> {
-                return { renderer.make_texture(cen::surface { piece_files[I] }) ... };
+                return { renderer.make_texture(piece_files[I]) ... };
             } (std::make_index_sequence<piece_datas.size()>())
         },
-        brd { }, is_running { false }, game_over { false }
+        brd { }, is_running { false }, game_over { false }, next_game_over { false }
     {
         window.set_min_size(cen::iarea { window_min_size, static_cast<std::size_t>(window_min_size / locked_aspect_ratio) });
 
@@ -130,7 +133,7 @@ namespace chess
                 {
                     bool selected_this = false;
 
-                    if (!game_over && brd.get_current_turn() == piece.get_colour())
+                    if (!next_game_over && !game_over && brd.get_current_turn() == piece.get_colour())
                     {
                         if (selected_piece == std::make_pair(x, y))
                             selected_this = true;
@@ -275,7 +278,7 @@ namespace chess
                                 auto [mx, my] = deselect ? mouse_left_at.value().get() : mouse_pos.get();
                                 if ((mx >= sx && my >= sy) && (mx <= ex && my <= ey))
                                 {
-                                    brd.move_piece(mv);
+                                    brd.move_piece(mv, move_audio, capture_audio);
                                     return true;
                                 }
                                 if (deselect)
@@ -320,11 +323,22 @@ namespace chess
             }
         }
 
-        if (!game_over && one_legal == false)
+        if (next_game_over && !game_over)
         {
-            cen::message_box::show("Game Over", "No more legal moves!", cen::message_box_type::information);
+            auto ccol = brd.get_current_turn();
+            auto checks = board::gen_checks(brd.get_current_turn(), brd, false);
+            cen::message_box::show(
+                "Game Over",
+                std::ranges::contains(checks, brd.get_player(ccol).king_pos)
+                    ? "Checkmate!"
+                    : "No more legal moves!",
+                cen::message_box_type::information
+            );
             game_over = true;
         }
+
+        if (!next_game_over && !game_over && one_legal == false)
+            next_game_over = true;
 
         if (deselect)
             selected_piece = std::nullopt;

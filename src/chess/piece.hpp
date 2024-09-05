@@ -5,7 +5,6 @@
 #include <cstdint>
 #include <cstddef>
 #include <utility>
-#include <vector>
 #include <ranges>
 
 namespace chess

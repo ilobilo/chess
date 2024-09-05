@@ -29,4 +29,7 @@ target("chess")
         target:add("defines", "DATA_FONT=\"" .. path.join(os.projectdir(), "data/FiraCode-Regular.ttf") .. "\"")
         target:add("defines", "DATA_KNOOK=\"" .. path.join(os.projectdir(), "data/knook.png") .. "\"")
         target:add("defines", "DATA_PIECES=\"" .. path.join(os.projectdir(), "data/pieces") .. "\"")
+
+        target:add("defines", "DATA_MOVE=\"" .. path.join(os.projectdir(), "data/move.mp3") .. "\"")
+        target:add("defines", "DATA_CAPTURE=\"" .. path.join(os.projectdir(), "data/capture.mp3") .. "\"")
     end)
