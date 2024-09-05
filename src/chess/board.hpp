@@ -7,6 +7,7 @@
 #include <array>
 
 #include <chess/piece.hpp>
+#include <centurion.hpp>
 
 namespace chess
 {
@@ -49,6 +50,14 @@ namespace chess
             };
         }
 
+        public:
+        std::vector<pos> checked_squares;
+
+        constexpr piece &at(std::size_t x, std::size_t y) { return buffer[y * 8 + x]; }
+        constexpr piece &at(pos p) { return buffer[p.second * 8 + p.first]; }
+        constexpr piece &operator[](std::size_t x, std::size_t y) { return at(x, y); }
+        constexpr auto &data() { return buffer; }
+
         constexpr auto &get_player(piece::colour col)
         {
             switch (col)
@@ -61,14 +70,6 @@ namespace chess
                     std::unreachable();
             };
         }
-
-        public:
-        std::vector<pos> checked_squares;
-
-        constexpr piece &at(std::size_t x, std::size_t y) { return buffer[y * 8 + x]; }
-        constexpr piece &at(pos p) { return buffer[p.second * 8 + p.first]; }
-        constexpr piece &operator[](std::size_t x, std::size_t y) { return at(x, y); }
-        constexpr auto &data() { return buffer; }
 
         constexpr piece::colour get_current_turn() const { return current_turn; }
 
@@ -104,7 +105,7 @@ namespace chess
         }
 
         std::pair<bool, bool> is_move_legal(move &mv, bool once = true, bool checking = false);
-        void move_piece(move mv);
+        void move_piece(move mv, cen::music &move_audio, cen::music &capture_audio);
 
         static std::vector<pos> gen_checks(piece::colour fcol, board &brd, bool once = true);
 

@@ -147,7 +147,7 @@ namespace chess
         return checked_squares;
     }
 
-    void board::move_piece(move mv)
+    void board::move_piece(move mv, cen::music &move_audio, cen::music &capture_audio)
     {
         // assume is_move_legal has been called
         last_move = { mv, at(mv.from), at(mv.to) };
@@ -187,8 +187,16 @@ namespace chess
 
         fpiece.first_move = false;
 
-        at(mv.to) = fpiece;
+        auto &mvto = at(mv.to);
+        bool captured = (mvto.get_type() != piece::type::none || mv.spec == special::enpassant);
+
+        mvto = fpiece;
         fpiece = piece { };
+
+        if (captured)
+            capture_audio.play();
+        else
+            move_audio.play();
 
         current_turn = rev(current_turn);
     }

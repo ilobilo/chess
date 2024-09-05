@@ -8,6 +8,7 @@ int main(int argc, char* argv[])
     const cen::sdl sdl;
     const cen::img img;
     const cen::ttf ttf;
+    const cen::mix mix;
 
     chess::app app { };
     app.run();

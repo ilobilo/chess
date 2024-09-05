@@ -50,6 +50,9 @@ IMPORT_PIECES(b)
 IMPORT_BIN(DATA_FONT, font_data)
 IMPORT_BIN(DATA_KNOOK, knook_data)
 
+IMPORT_BIN(DATA_MOVE, move_data)
+IMPORT_BIN(DATA_CAPTURE, capture_data)
+
 namespace chess
 {
     std::array<std::pair<const void *, std::size_t>, 12> piece_datas
@@ -65,5 +68,15 @@ namespace chess
     std::pair<const void *, std::size_t> get_font_data()
     {
         return { reinterpret_cast<const void *>(font_data), reinterpret_cast<std::size_t>(font_data_size) };
+    }
+
+    std::pair<const void *, std::size_t> get_move_data()
+    {
+        return { reinterpret_cast<const void *>(move_data), reinterpret_cast<std::size_t>(move_data_size) };
+    }
+
+    std::pair<const void *, std::size_t> get_capture_data()
+    {
+        return { reinterpret_cast<const void *>(capture_data), reinterpret_cast<std::size_t>(capture_data_size) };
     }
 } // namespace chess
